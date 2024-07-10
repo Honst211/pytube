@@ -83,23 +83,24 @@ class Caption:
         """
         segments = []
         root = ElementTree.fromstring(xml_captions)
-        for i, child in enumerate(list(root)):
-            text = child.text or ""
-            caption = unescape(text.replace("\n", " ").replace("  ", " "),)
-            try:
-                duration = float(child.attrib["dur"])
-            except KeyError:
-                duration = 0.0
-            start = float(child.attrib["start"])
-            end = start + duration
-            sequence_number = i + 1  # convert from 0-indexed to 1.
-            line = "{seq}\n{start} --> {end}\n{text}\n".format(
-                seq=sequence_number,
-                start=self.float_to_srt_time_format(start),
-                end=self.float_to_srt_time_format(end),
-                text=caption,
-            )
-            segments.append(line)
+        index = 1
+        for elem in root.iter('body'):
+            for p in elem.iter('p'):
+                start = int(p.attrib['t'])
+                duration = int(p.attrib.get('d', 0))
+                end = start + duration
+
+                caption = unescape((p.text or '').replace("\n", " ").replace("  ", " "))
+
+                line = "{seq}\n{start} --> {end}\n{text}\n".format(
+                    seq=index,
+                    start=self.float_to_srt_time_format(start),
+                    end=self.float_to_srt_time_format(end),
+                    text=caption,
+                )
+                segments.append(line)
+                index += 1
+
         return "\n".join(segments).strip()
 
     def download(
